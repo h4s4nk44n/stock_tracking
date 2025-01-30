@@ -1,0 +1,86 @@
+.chart-area {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 100vh;  /* Full width of the parent container */
+    height: 100vh; /* 50% of the viewport height */
+}
+
+.header {
+    position: fixed;
+    top: 0;
+    width: 100%;
+    background-color: white; /* Adjust as needed */
+    z-index: 1000; /* Ensure it stays on top of other elements */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* Optional: Add a shadow for better visibility */
+}
+
+.search-bar {
+    display: flex;
+    justify-content: center;
+  }
+  
+.search-input {
+    width: 50%;
+    padding: 10px;
+    border-radius: 5px;
+    border: 1px solid #ccc;
+}
+
+.chart-area {
+    margin: 20px auto;
+    width: 80%;
+    height: 300px;
+    background-color: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #666;
+  }
+  
+.chart-placeholder {
+    text-align: center;
+    color: #aaa;
+}
+.chart-area {
+    margin: 20px auto;
+    width: 80%;
+    height: 300px;
+    background-color: #444;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px dashed #666;
+  }
+  
+.chart-placeholder {
+    text-align: center;
+    color: #aaa;
+}
+.data-boxes {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 20px auto;
+    width: 80%;
+  }
+  
+  .data-box {
+    background-color: #444;
+    padding: 10px;
+    border-radius: 5px;
+    text-align: center;
+  }
+  
+  .data-box label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+  }
+  
+.data-value {
+    background-color: #555;
+    padding: 5px;
+    border-radius: 3px;
+}
+      

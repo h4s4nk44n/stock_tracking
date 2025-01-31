@@ -1,7 +1,8 @@
 import Header from './components/Header';
-import ChartArea from './components/Chartarea';
+import ChartArea from './components//Chartarea';
 import DataBoxes from './components/DataBoxes';
 import { useState } from 'react';
+import SearchBar from './components/Searchbar';
 
 const data = [
 {'date': '2025-01-01', 'price': 129},
@@ -213,8 +214,6 @@ function App() {
   return (
     <div className="app">
       <Header />
-      <ChartArea data={data} onDateSelect={setSelectedDate} /> {/* Pass the callback */}
-      <DataBoxes date={selectedDate} /> {/* Pass the selected date */}
     </div>
   );
 }

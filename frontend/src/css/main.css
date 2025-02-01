@@ -58,20 +58,20 @@
     gap: 10px;
     margin: 20px auto;
     width: 80%;
-  }
+}
   
-  .data-box {
+.data-box {
     background-color: #444;
     padding: 10px;
     border-radius: 5px;
     text-align: center;
-  }
+}
   
-  .data-box label {
+.data-box label {
     font-weight: bold;
     display: block;
     margin-bottom: 5px;
-  }
+}
   
 .data-value {
     background-color: #555;

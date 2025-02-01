@@ -8,12 +8,12 @@ DB_PATH = "database.db"
 SYMBOL = "GOOGL"
 
 def init_db():
-    """Initialize the database and create table if not exists"""
+    """Initialize the database and create the stock_data_10years table if not exists"""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
 
     cursor.execute('''
-        CREATE TABLE IF NOT EXISTS stock_data (
+        CREATE TABLE IF NOT EXISTS stock_data_10years (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT,
             timestamp TEXT UNIQUE,
@@ -29,36 +29,46 @@ def init_db():
     conn.close()
 
 def fetch_and_store_stock(symbol):
-    """Fetch stock data from Yahoo Finance and store it in the database"""
-    print(f"📡 Fetching 10 years of {symbol} stock data...")
+    """Fetch 1 year of daily stock data and store it in the database"""
+    print(f"📡 Fetching last 1 year of {symbol} stock data (daily interval)...")
 
     try:
-        # Download stock data for the last 10 years (daily)
         df = yf.download(symbol, period="10y", interval="1d")
 
         if df.empty:
             print(f"❌ No data found for {symbol}.")
             return
 
-        # Reset index to make "Date" a column
-        df.reset_index(inplace=True)
+        # ✅ Flatten MultiIndex if necessary
+        if isinstance(df.columns, pd.MultiIndex):
+            df.columns = df.columns.get_level_values(0)  # Take only first level
 
-        # Convert timestamp to string format YYYY-MM-DD
-        df["Date"] = df["Date"].dt.strftime('%Y-%m-%d')
+        # ✅ Ensure "Date" is a column, not an index
+        if "Date" not in df.columns:
+            df.reset_index(inplace=True)
 
-        # Rename columns to match database schema
-        df.rename(columns={"Date": "timestamp", "Open": "open", "High": "high",
-                           "Low": "low", "Close": "close", "Volume": "volume"}, inplace=True)
+        # ✅ Rename "Date" column to "timestamp"
+        df.rename(columns={"Date": "timestamp"}, inplace=True)
 
-        # Handle NaN values (convert them to None for SQLite)
+        # ✅ Ensure "timestamp" column exists
+        if "timestamp" not in df.columns:
+            raise ValueError("❌ ERROR: 'timestamp' column missing after processing!")
+
+        # ✅ Convert "timestamp" to string format (YYYY-MM-DD HH:MM:SS)
+        df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
+
+        # ✅ Convert columns to lowercase
+        df.columns = df.columns.str.lower()
+
+        # ✅ Handle NaN values (convert them to None for SQLite)
         df.replace({np.nan: None}, inplace=True)
 
-        # Convert all values to Python native types to avoid type errors
+        # ✅ Convert all values to Python native types
         df["open"] = df["open"].astype(float)
         df["high"] = df["high"].astype(float)
         df["low"] = df["low"].astype(float)
         df["close"] = df["close"].astype(float)
-        df["volume"] = df["volume"].astype("Int64")  # Use Int64 to handle None
+        df["volume"] = df["volume"].fillna(0).astype(int)  # Fix volume NaN issue
 
         # Connect to SQLite database
         conn = sqlite3.connect(DB_PATH)
@@ -67,7 +77,6 @@ def fetch_and_store_stock(symbol):
         # Insert stock data into the database, avoiding duplicates
         for _, row in df.iterrows():
             try:
-                # Convert each value to a Python primitive type
                 timestamp = str(row["timestamp"])
                 open_price = float(row["open"]) if row["open"] is not None else None
                 high_price = float(row["high"]) if row["high"] is not None else None
@@ -79,24 +88,24 @@ def fetch_and_store_stock(symbol):
                 print(f"Inserting: {symbol}, {timestamp}, {open_price}, {high_price}, {low_price}, {close_price}, {volume}")
 
                 cursor.execute('''
-                    INSERT INTO stock_data (symbol, timestamp, open, high, low, close, volume)
+                    INSERT INTO stock_data_10years (symbol, timestamp, open, high, low, close, volume)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
                 ''', (symbol, timestamp, open_price, high_price, low_price, close_price, volume))
 
             except sqlite3.IntegrityError:
-                # Skip duplicate records
-                pass
+                print(f"⚠️ Skipping duplicate entry for {symbol} at {timestamp}")
 
         # Commit and close database
         conn.commit()
         conn.close()
 
-        print(f"✅ Successfully stored 10 years of {symbol} stock data in {DB_PATH}!")
+        print(f"✅ Successfully stored last 1 year of {symbol} stock data in {DB_PATH}!")
 
     except Exception as e:
         print(f"❌ Error: {str(e)}")
 
+
 # Run the script
 if __name__ == '__main__':
     init_db()  # Initialize the database
-    fetch_and_store_stock(SYMBOL)  # Fetch & store TSLA data
+    fetch_and_store_stock(SYMBOL)  # Fetch & store stock data

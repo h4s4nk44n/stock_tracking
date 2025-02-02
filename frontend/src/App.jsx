@@ -1,21 +1,19 @@
-import Header from './components/Header';
-import ChartArea from './components//Chartarea';
-import DataBoxes from './components/DataBoxes';
-import { useState } from 'react';
-import SearchBar from './components/Searchbar';
 import React from "react";
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { StockProvider } from "./context/StockContext"; // ✅ Ensure correct path
+import Header from "./components/Header";
+import ChartArea from "./components/Chartarea";
 
 function App() {
-  const [selectedDate, setSelectedDate] = useState(null); // State to store the selected date
-
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element ={<Header/>} />
-        <Route path="/:symbol" element={<ChartArea />} />
-      </Routes>
-    </Router>
+    <StockProvider> {/* ✅ Wrap entire app */}
+      <Router>
+        <Routes>
+          <Route path="/" element={<Header />} />
+          <Route path="/:symbol" element={<ChartArea />} />
+        </Routes>
+      </Router>
+    </StockProvider>
   );
 }
 

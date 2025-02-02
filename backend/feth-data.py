@@ -7,16 +7,21 @@ import numpy as np
 DB_PATH = "database.db"
 SYMBOL = "GOOGL"
 
-def init_db():
-    """Initialize the database and create the stock_data_10years table if not exists"""
+# ✅ Automatically adjust period & interval based on need
+PERIOD = "1d"  # Choose from '7d', '60d', '1y', '10y', etc.
+INTERVAL = "1m"  # '1m' for intraday, '1d' for long-term
+
+def init_db(symbol, period):
+    """Initialize the database and create the stock_data table if not exists"""
+    table_name = f"stock_data_{symbol}_{period.replace(' ', '_')}"  # ✅ Ensure table name is valid
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
-
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS stock_data_10years (
+    
+    cursor.execute(f'''
+        CREATE TABLE IF NOT EXISTS {table_name} (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             symbol TEXT,
-            timestamp TEXT UNIQUE,
+            timestamp TEXT,  -- ✅ Removed UNIQUE constraint
             open REAL,
             high REAL,
             low REAL,
@@ -27,13 +32,14 @@ def init_db():
 
     conn.commit()
     conn.close()
+    return table_name
 
 def fetch_and_store_stock(symbol):
-    """Fetch 1 year of daily stock data and store it in the database"""
-    print(f"📡 Fetching last 1 year of {symbol} stock data (daily interval)...")
+    """Fetch stock data and store it in the database"""
+    print(f"📡 Fetching last {PERIOD} of {symbol} stock data ({INTERVAL} interval)...")
 
     try:
-        df = yf.download(symbol, period="10y", interval="1d")
+        df = yf.download(symbol, period=PERIOD, interval=INTERVAL)
 
         if df.empty:
             print(f"❌ No data found for {symbol}.")
@@ -43,24 +49,19 @@ def fetch_and_store_stock(symbol):
         if isinstance(df.columns, pd.MultiIndex):
             df.columns = df.columns.get_level_values(0)  # Take only first level
 
-        # ✅ Ensure "Date" is a column, not an index
-        if "Date" not in df.columns:
-            df.reset_index(inplace=True)
+        # ✅ Ensure "timestamp" is a column, not an index
+        df.reset_index(inplace=True)
 
-        # ✅ Rename "Date" column to "timestamp"
-        df.rename(columns={"Date": "timestamp"}, inplace=True)
-
-        # ✅ Ensure "timestamp" column exists
-        if "timestamp" not in df.columns:
-            raise ValueError("❌ ERROR: 'timestamp' column missing after processing!")
+        # ✅ Rename "Date" or "Datetime" column to "timestamp"
+        df.rename(columns={"Date": "timestamp", "Datetime": "timestamp"}, inplace=True)
 
         # ✅ Convert "timestamp" to string format (YYYY-MM-DD HH:MM:SS)
         df["timestamp"] = pd.to_datetime(df["timestamp"]).dt.strftime("%Y-%m-%d %H:%M:%S")
 
-        # ✅ Convert columns to lowercase
+        # ✅ Convert column names to lowercase
         df.columns = df.columns.str.lower()
 
-        # ✅ Handle NaN values (convert them to None for SQLite)
+        # ✅ Handle NaN values
         df.replace({np.nan: None}, inplace=True)
 
         # ✅ Convert all values to Python native types
@@ -68,38 +69,28 @@ def fetch_and_store_stock(symbol):
         df["high"] = df["high"].astype(float)
         df["low"] = df["low"].astype(float)
         df["close"] = df["close"].astype(float)
-        df["volume"] = df["volume"].fillna(0).astype(int)  # Fix volume NaN issue
+        df["volume"] = df["volume"].fillna(0).astype(int)
 
         # Connect to SQLite database
+        table_name = f"stock_data_{symbol}_{PERIOD.replace(' ', '_')}"  # ✅ Use a valid table name
         conn = sqlite3.connect(DB_PATH)
         cursor = conn.cursor()
 
-        # Insert stock data into the database, avoiding duplicates
+        # Insert stock data into the database
         for _, row in df.iterrows():
             try:
-                timestamp = str(row["timestamp"])
-                open_price = float(row["open"]) if row["open"] is not None else None
-                high_price = float(row["high"]) if row["high"] is not None else None
-                low_price = float(row["low"]) if row["low"] is not None else None
-                close_price = float(row["close"]) if row["close"] is not None else None
-                volume = int(row["volume"]) if row["volume"] is not None else None
-
-                # Debugging print to check values before inserting
-                print(f"Inserting: {symbol}, {timestamp}, {open_price}, {high_price}, {low_price}, {close_price}, {volume}")
-
-                cursor.execute('''
-                    INSERT INTO stock_data_10years (symbol, timestamp, open, high, low, close, volume)
+                cursor.execute(f'''
+                    INSERT INTO {table_name} (symbol, timestamp, open, high, low, close, volume)
                     VALUES (?, ?, ?, ?, ?, ?, ?)
-                ''', (symbol, timestamp, open_price, high_price, low_price, close_price, volume))
-
+                ''', (symbol, row["timestamp"], row["open"], row["high"], row["low"], row["close"], row["volume"]))
             except sqlite3.IntegrityError:
-                print(f"⚠️ Skipping duplicate entry for {symbol} at {timestamp}")
+                print(f"⚠️ Skipping duplicate entry for {symbol} at {row['timestamp']}")
 
-        # Commit and close database
+        # Commit and close
         conn.commit()
         conn.close()
 
-        print(f"✅ Successfully stored last 1 year of {symbol} stock data in {DB_PATH}!")
+        print(f"✅ Successfully stored last {PERIOD} of {symbol} stock data in {DB_PATH}!")
 
     except Exception as e:
         print(f"❌ Error: {str(e)}")
@@ -107,5 +98,5 @@ def fetch_and_store_stock(symbol):
 
 # Run the script
 if __name__ == '__main__':
-    init_db()  # Initialize the database
+    table_name = init_db(SYMBOL, PERIOD)  # ✅ Pass symbol and period dynamically
     fetch_and_store_stock(SYMBOL)  # Fetch & store stock data

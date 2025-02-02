@@ -1,5 +1,12 @@
 @import "tailwindcss";
 
+body {
+    overflow-x: hidden;
+    margin: 0;
+    padding: 0;
+    width: 100%;
+}
+
 .chart-area {
     display: flex;
     justify-content: center;

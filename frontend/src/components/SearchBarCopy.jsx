@@ -1,4 +1,4 @@
-import React, {useState, useEffect, useContext} from "react"
+import React, {useState, useEffect, useContext, useRef} from "react"
 import '../css/main.css'
 import {useNavigate} from "react-router-dom"
 import { motion } from "framer-motion";
@@ -8,6 +8,7 @@ function SearchBarCopy() {
     const[istyping, setIsTyping] = useState(false);
     const[query, setQuery] = useState("");
     const[filteredResults, setFilteredResults] = useState([]);
+    const keyPressRef = useRef(false);
     const [selectedIndex, setSelectedIndex] = useState(-1);
     const { stockNames, selectedStock } = useContext(StockContext);
     const navigate = useNavigate(); // ✅ Initialize useNavigate inside the component
@@ -30,27 +31,36 @@ function SearchBarCopy() {
       }
   }, [query, stockNames]);
 
-    const handleKeyDown = (e) => {
-      if (filteredResults.length === 0) return;
-    
-      if (e.key === "ArrowDown") {
+  const handleKeyDown = (e) => {
+    if (filteredResults.length === 0) return;
+  
+    if (keyPressRef.current) return; // ✅ Prevent rapid state updates
+    keyPressRef.current = true;
+  
+    setTimeout(() => (keyPressRef.current = false), 100); // ✅ Reset after 100ms
+
+    if (e.key === "ArrowDown") {
         e.preventDefault();
-        setSelectedIndex((prevIndex) =>
-          prevIndex < filteredResults.length - 1 ? prevIndex + 1 : 0
+        setSelectedIndex((prevIndex) => 
+            prevIndex < filteredResults.length - 1 ? prevIndex + 1 : 0
         );
-      } else if (e.key === "ArrowUp") {
+    } else if (e.key === "ArrowUp") {
         e.preventDefault();
-        setSelectedIndex((prevIndex) =>
-          prevIndex > 0 ? prevIndex - 1 : filteredResults.length - 1
+        setSelectedIndex((prevIndex) => 
+            prevIndex > 0 ? prevIndex - 1 : filteredResults.length - 1
         );
-      } else if (e.key === "Enter") {
+    } else if (e.key === "Enter") {
         e.preventDefault();
-        console.log("Navigating to: ", `/${query.trim().toUpperCase()}`); // ✅ Debugging log
-        if (query.trim() !== "") {
-          navigate(`/${query.trim().toUpperCase()}`); // ✅ Redirects to "/AAPL"
+        if (selectedIndex >= 0 && filteredResults[selectedIndex]) {
+            setQuery(filteredResults[selectedIndex].symbol);
+            setIsTyping(false);
+            navigate(`/${filteredResults[selectedIndex].symbol}`);
+            setSelectedIndex(-1);
+        } else {
+            navigate(`/${query.trim().toUpperCase()}`);
         }
-      }
-    };
+    }
+  };
     
     return (
       <div className="relative top-0 left-0 w-full z-50 p-1 mt-0 pt-0 flex justify-center">

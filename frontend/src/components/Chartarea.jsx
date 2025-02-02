@@ -11,8 +11,8 @@ function ChartArea() {
   const [stockData, setStockData] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [selectedDate, setSelectedDate] = useState(null);
-  const { selectedStock } = useContext(StockContext); 
+  const [selectedDate, setSelectedDate] = useState({});
+  const {selectedStock} = useContext(StockContext); 
   const [selectedOption, setSelectedOption] = useState(() => {
     return localStorage.getItem("selectedOption") || "1d";
   });
@@ -47,34 +47,13 @@ function ChartArea() {
       setError(null);
   
       try {
-        const response = await fetch(`http://127.0.0.1:5000/stocks/${symbol}?interval=${selectedOption}`);
+        const response = await fetch(`http://127.0.0.1:5000/stocks/${stockSymbol}?period=${selectedOption}`);
         if (!response.ok) {
           throw new Error("Stock data not found");
         }
         const data = await response.json();
   
-        console.log("API Response Dates:", data.dates); // ✅ Debug API Response
-        //"close_prices": close_prices,
-        //"open_prices": open_prices,
-        //"symbol": symbol,
-        //"high_prices": high_prices,
-        //"low_prices": low_prices,
-        //"volume":volume,
-        const formattedData = data.dates.map((date, index) => ({
-          date, // Keep date as string
-          price: data.close_prices[index],
-          open_price: data.open_prices[index],
-          symbol: data.symbol[index],
-          high_prices: data.high_prices[index],
-          low_prices: data.low_prices[index],
-          volume: data.volume[index]
-        }));
-  
-        setStockData(formattedData);
-
-        if (formattedData.length > 0) {
-          setSelectedDate(formattedData[formattedData.length - 1]);
-        }
+        setStockData(data);
 
       } catch (error) {
         setError(error.message);
@@ -82,17 +61,22 @@ function ChartArea() {
         setLoading(false);
       }
     };
-  
+    
     fetchStockData();
-  }, [symbol, selectedOption]);
-  
+  }, [stockSymbol, selectedOption]);
+
+  useEffect(() => {
+    if (stockData.length > 0) {
+      setSelectedDate(stockData[stockData.length - 1]);
+    }
+  }, [stockData]);
 
   if (loading) return <p>Loading stock data...</p>;
   if (error) return <p>Error: {error}</p>;
   if (!stockData || stockData.length === 0) return <p>No data available</p>;
 
-  const minValue = Math.min(...stockData.map(d => d.price));
-  const maxValue = Math.max(...stockData.map(d => d.price));
+  const minValue = Math.min(...stockData.map(d => d.close));
+  const maxValue = Math.max(...stockData.map(d => d.close));
 
   const adjustedMin = Number((minValue).toFixed(4));
   const adjustedMax = Number((maxValue + maxValue * 0.01).toFixed(4)); 
@@ -143,7 +127,7 @@ function ChartArea() {
   const getSpacedTicks = (data, numTicks) => {
     if (data.length === 0) return [];
   
-    const uniqueDates = Array.from(new Set(data.map(d => d.date))); // ✅ Remove duplicates
+    const uniqueDates = Array.from(new Set(data.map(d => d.timestamp))); // ✅ Remove duplicates
     const tickStep = Math.max(1, Math.floor(uniqueDates.length / numTicks));
     
     let spacedTicks = uniqueDates.filter((_, index) => index % tickStep === 0);
@@ -158,7 +142,7 @@ function ChartArea() {
   const handleChartClick = (event) => {
     if (event && event.activeLabel) {
       const clickedDate = event.activeLabel;
-      const clickedData = stockData.find((d) => d.date === clickedDate);
+      const clickedData = stockData.find((d) => d.timestamp === clickedDate);
 
       if (clickedData) {
         setSelectedDate(clickedData); // ✅ Store selected data
@@ -180,7 +164,7 @@ function ChartArea() {
           <BoxSelector onSelect={setSelectedOption} initialSelected={selectedOption} />
         </div>
         <div className="self-start w-full text-left ml-65">
-          <p><strong>symbol:</strong> {selectedDate.symbol}</p>
+          <p><strong>symbol:</strong> {selectedDate ? selectedDate.symbol : "N/A"}</p>
         </div>
       </div>
       
@@ -196,7 +180,7 @@ function ChartArea() {
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
-            dataKey="date" 
+            dataKey="timestamp" 
             tickFormatter={formatXAxis} 
             ticks={getSpacedTicks(stockData, 15)} // ✅ Custom spacing
             interval="preserveStartEnd" // ✅ Keeps first & last label
@@ -214,7 +198,7 @@ function ChartArea() {
             tick={{ fill: "#FFFFFF", fontSize: 14 }}
             />
           <Tooltip content={(props) => <CustomTooltip {...props} selectedOption={selectedOption} />} />
-          <Line type="bump" dataKey="price" stroke="#8884d8" dot={false} />
+          <Line type="bump" dataKey="close" stroke="#8884d8" dot={false} />
         </LineChart>
       </div>
       <DataBoxes selectedOption={selectedOption} date={selectedDate} data={stockData}></DataBoxes>

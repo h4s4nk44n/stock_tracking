@@ -3,8 +3,8 @@ import { useState, useEffect } from "react";
 const BoxSelector = ({ onSelect, initialSelected }) => {
   const options = [
     { id: 1, label: "Today", value: "1d" },
-    { id: 2, label: "Last Week", value: "1w" },
-    { id: 3, label: "Last Month", value: "1m" },
+    { id: 2, label: "Last Week", value: "7d" },
+    { id: 3, label: "Last Month", value: "30d" },
     { id: 4, label: "Last Year", value: "1y" },
     { id: 5, label: "10 Year", value: "10y" },
   ];

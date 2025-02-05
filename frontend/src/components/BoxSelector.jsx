@@ -11,7 +11,7 @@ const BoxSelector = ({ onSelect, initialSelected }) => {
   const [selected, setSelected] = useState(initialSelected);
 
   useEffect(() => {
-    onSelect(initialSelected); // ✅ Send initial selection to parent
+    onSelect(initialSelected);
   }, [initialSelected, onSelect]);
 
   const handleSelect = (value) => {

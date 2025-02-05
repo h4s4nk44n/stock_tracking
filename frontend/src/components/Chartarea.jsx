@@ -37,7 +37,7 @@ function ChartArea() {
     console.log("Selected Option:", selectedOption);
   }, [selectedOption]);
 
-  const stockSymbol = selectedStock?.symbol || symbol; // ✅ Use selectedStock if available, otherwise fallback to useParams()
+  const stockSymbol = selectedStock?.symbol || symbol;
 
   useEffect(() => {
     if (!stockSymbol) return;
@@ -82,27 +82,27 @@ function ChartArea() {
   const adjustedMax = Number((maxValue + maxValue * 0.01).toFixed(4)); 
 
   const CustomTooltip = ({ active, payload, label, selectedOption }) => {
-    console.log("CustomTooltip - selectedOption:", selectedOption); // ✅ Debugging
+    console.log("CustomTooltip - selectedOption:", selectedOption); 
   
     if (active && payload && payload.length) {
-      let formattedTime = String(label); // ✅ Ensure `label` is a string
+      let formattedTime = String(label);
   
       if (formattedTime.includes(" ")) {
-        const [datePart, timePart] = formattedTime.split(" "); // ✅ Extract Date & Time
+        const [datePart, timePart] = formattedTime.split(" "); 
   
         if (selectedOption === "1d") { 
-          formattedTime = timePart; // ✅ Show only HH:mm for "Today"
+          formattedTime = timePart; 
         } else if(selectedOption === "1y" || "10y") {
           formattedTime = datePart;
         } else {
-          formattedTime = `${datePart} ${timePart}`; // ✅ Show full date + time
+          formattedTime = `${datePart} ${timePart}`;
         }
       }
   
       return (
         <div className="bg-black p-2 rounded shadow-md text-white">
-          <p className="font-bold">{`Time: ${formattedTime}`}</p> {/* ✅ Show Correct Format */}
-          <p>{`Price: $${payload[0].value.toFixed(4)}`}</p> {/* ✅ Show price */}
+          <p className="font-bold">{`Time: ${formattedTime}`}</p> 
+          <p>{`Price: $${payload[0].value.toFixed(4)}`}</p>
         </div>
       );
     }
@@ -110,16 +110,15 @@ function ChartArea() {
   };
   
   const formatXAxis = (tick, selectedOption) => {
-    if (!tick) return ""; // Ensure tick is valid
+    if (!tick) return ""; 
   
-    // Convert tick to string (in case it's not)
     const tickStr = String(tick);
   
     if (selectedOption === "1d") {
-      // ✅ Show only hours & minutes if "Today" is selected
+
       return tickStr.includes(" ") ? tickStr.split(" ")[1].slice(0, 5) : tickStr;
     } else {
-      // ✅ Show only date for all other options
+
       return tickStr.includes(" ") ? tickStr.split(" ")[0] : tickStr;
     }
   };
@@ -127,12 +126,11 @@ function ChartArea() {
   const getSpacedTicks = (data, numTicks) => {
     if (data.length === 0) return [];
   
-    const uniqueDates = Array.from(new Set(data.map(d => d.timestamp))); // ✅ Remove duplicates
+    const uniqueDates = Array.from(new Set(data.map(d => d.timestamp))); 
     const tickStep = Math.max(1, Math.floor(uniqueDates.length / numTicks));
     
     let spacedTicks = uniqueDates.filter((_, index) => index % tickStep === 0);
   
-    // ✅ Ensure first & last date are always included
     if (!spacedTicks.includes(uniqueDates[0])) spacedTicks.unshift(uniqueDates[0]);
     if (!spacedTicks.includes(uniqueDates[uniqueDates.length - 1])) spacedTicks.push(uniqueDates[uniqueDates.length - 1]);
   
@@ -145,21 +143,20 @@ function ChartArea() {
       const clickedData = stockData.find((d) => d.timestamp === clickedDate);
 
       if (clickedData) {
-        setSelectedDate(clickedData); // ✅ Store selected data
+        setSelectedDate(clickedData);
       }
     }
   }; 
 
   return (
     <div className="flex flex-col w-screen min-h-screen items-center p-0 m-0">
-      {/* Top Section: Contains SearchBar + Selection Boxes */}
+
       <div className="w-full flex flex-col items-center mt-4">
-        {/* Larger Search Bar Centered */}
+
         <div className="w-full max-w-3xl">
           <SearchBarCopy />
         </div>
 
-        {/* Selection Boxes Aligned to the Right */}
         <div className="w-76/100 flex justify-end mt-4">
           <BoxSelector onSelect={setSelectedOption} initialSelected={selectedOption} />
         </div>
@@ -169,22 +166,21 @@ function ChartArea() {
       </div>
       
 
-      {/* Chart Centered */}
       <div className="w-4/5 mx-auto">
         <LineChart
           width={chartWidth}
           height={chartHeight}
           data={stockData}
-          margin={{ top: 10, right: 50, left: 20, bottom: 50 }} // ✅ Extra space for labels
+          margin={{ top: 10, right: 50, left: 20, bottom: 50 }}
           onClick={handleChartClick}
         >
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis 
             dataKey="timestamp" 
             tickFormatter={formatXAxis} 
-            ticks={getSpacedTicks(stockData, 15)} // ✅ Custom spacing
-            interval="preserveStartEnd" // ✅ Keeps first & last label
-            angle={-45} // ✅ Rotates for readability
+            ticks={getSpacedTicks(stockData, 15)}
+            interval="preserveStartEnd" 
+            angle={-45}
             domain={["dataMin", "dataMax"]} 
             tick={{ fill: "#FFFFFF", fontSize: 14 }}
             dx={-10} 

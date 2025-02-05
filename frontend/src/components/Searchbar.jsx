@@ -2,28 +2,34 @@ import React, { useState, useEffect, useRef, useContext } from "react";
 import '../css/main.css';
 import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
-import { StockContext } from "../context/StockContext"; // ✅ Import Context
+import { StockContext } from "../context/StockContext";
 
 function SearchBar() {
-    const {stockNames, setSelectedStock } = useContext(StockContext); // ✅ Get data from Context
+    const {stockNames, setSelectedStock } = useContext(StockContext);
     const [istyping, setIsTyping] = useState(false);
     const [query, setQuery] = useState("");
     const [filteredResults, setFilteredResults] = useState([]);
-    const [selectedIndex, setSelectedIndex] = useState(-1); // ✅ Tracks highlighted item
-
-    const navigate = useNavigate(); // ✅ Initialize useNavigate inside the component
+    const [selectedIndex, setSelectedIndex] = useState(-1);
+    const inputRef = useRef(null);
+    const navigate = useNavigate();
     const keyPressRef = useRef(false);
     const handleChange = (e) => {
         setQuery(e.target.value);
-        setSelectedIndex(-1); // ✅ Reset selection when typing
+        setSelectedIndex(-1); 
     };
     
     useEffect(() => {
-        if (stockNames.length === 0) return; // ✅ Prevents filtering on empty dataset
+        if(inputRef.current) {
+            inputRef.current.focus();
+        }
+    },[]);
+    
+    useEffect(() => {
+        if (stockNames.length === 0) return;
     
         if (query.length > 0) {
             const filtered = stockNames.filter(stock =>
-                stock?.name?.toLowerCase().includes(query.toLowerCase()) || // ✅ Safe optional chaining
+                stock?.name?.toLowerCase().includes(query.toLowerCase()) ||
                 stock?.symbol?.toLowerCase().includes(query.toLowerCase())
             );
     
@@ -37,17 +43,17 @@ function SearchBar() {
 
     const handleSelect = (stock) => {
         setQuery(stock.symbol);
-        setSelectedStock(stock); // ✅ Set selected stock in Context
+        setSelectedStock(stock);
         navigate(`/${stock.symbol}`);
     };
 
     const handleKeyDown = (e) => {
         if (filteredResults.length === 0) return;
       
-        if (keyPressRef.current) return; // ✅ Prevent rapid state updates
+        if (keyPressRef.current) return;
         keyPressRef.current = true;
       
-        setTimeout(() => (keyPressRef.current = false), 100); // ✅ Reset after 100ms
+        setTimeout(() => (keyPressRef.current = false), 100);
     
         if (e.key === "ArrowDown") {
             e.preventDefault();
@@ -72,7 +78,6 @@ function SearchBar() {
         }
     };
     
-    // ✅ Ensure `selectedIndex` doesn't exceed filteredResults length
     useEffect(() => {
         if (selectedIndex >= filteredResults.length) {
             setSelectedIndex(filteredResults.length - 1);
@@ -96,7 +101,7 @@ function SearchBar() {
                 <label htmlFor="simple-search" className="sr-only">Search</label>
 
                 <div className="relative w-full">
-                    {/* Cloud Icon (Left Inside Input) */}
+
                     <div className="absolute left-3 top-1/2 -translate-y-1/2">
                         <svg width="3em" height="3em" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <path 
@@ -109,10 +114,10 @@ function SearchBar() {
                         </svg>
                     </div>
 
-                    {/* Input Field */}
                     <input
                         type="text"
                         id="simple-search"
+                        ref={inputRef}
                         className="bg-gray-50 border border-gray-300 text-gray-900 text-3xl rounded-xl focus:ring-blue-500 focus:border-blue-500 block w-full ps-20 pr-16 p-4 dark:bg-gray-700 dark:border-gray-600 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                         placeholder="Search stock symbol (e.g., AAPL)"
                         value={query}
@@ -124,7 +129,6 @@ function SearchBar() {
                         autoComplete="off"
                     />
 
-                    {/* Search Button (Right Inside Input) */}
                     <button
                         type="submit"
                         className="absolute right-0 top-0 h-full w-16 flex items-center justify-center rounded-r-xl bg-transparent border-none"
@@ -141,7 +145,6 @@ function SearchBar() {
                         </svg>
                     </button>
 
-                    {/* Search Suggestions Dropdown */}
                     {istyping && filteredResults.length > 0 && (
                     <motion.ul
                         className="absolute top-full left-0 w-full bg-gray-800 text-white rounded-xl shadow-lg mt-2"

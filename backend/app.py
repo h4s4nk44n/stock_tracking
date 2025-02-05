@@ -110,12 +110,22 @@ def fetch_and_store_stock(symbol):
 
             for _, row in df.iterrows():
                 try:
+                    # ✅ Ensure numeric values are rounded to 4 decimal places
+                    open_price = round(float(row.get("open", 0) or 0), 4)
+                    high_price = round(float(row.get("high", 0) or 0), 4)
+                    low_price = round(float(row.get("low", 0) or 0), 4)
+                    close_price = round(float(row.get("close", 0) or 0), 4)
+                    volume = int(row.get("volume", 0) or 0)  # Ensure volume is an integer
+
                     cursor.execute(f'''
                         INSERT INTO {table_name} (symbol, timestamp, open, high, low, close, volume)
                         VALUES (?, ?, ?, ?, ?, ?, ?)''',
-                        (symbol, row["timestamp"], row.get("open"), row.get("high"), row.get("low"), row.get("close"), row.get("volume")))
+                        (symbol, row["timestamp"], open_price, high_price, low_price, close_price, volume))
+                
                 except sqlite3.IntegrityError:
                     print(f"⚠️ Skipping duplicate entry for {symbol} at {row['timestamp']}")
+                except Exception as e:
+                    print(f"❌ ERROR inserting {symbol} at {row['timestamp']}: {e}")
 
             db.commit()
             db.close()
